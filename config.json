@@ -1,0 +1,13 @@
+{
+  "locations": ["New York", "San Francisco", "Remote"],
+  "roles": {
+    "Software Engineering": ["software engineer", "software developer"],
+    "Data": ["data analyst", "data scien*"],
+    "Product": ["product manag*", "product analyst"]
+  },
+  "experience": "entry",
+  "exclude_words": [],
+  "extra_companies": {"greenhouse": [], "lever": [], "ashby": []},
+  "schedule": {"timezone": "America/New_York", "hour": 7, "minute": 0},
+  "track_applications": true
+}

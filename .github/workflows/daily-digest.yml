@@ -1,0 +1,60 @@
+name: Daily job digest
+
+on:
+  schedule:
+    # GitHub cron is UTC. These are your local send time in winter and in
+    # summer (daylight saving); the gate step below runs only the one that
+    # matches today. `python -m jobsearch setup` rewrites these lines from
+    # "schedule" in config.json.
+    # BEGIN SCHEDULE
+    - cron: "0 12 * * *"
+    - cron: "0 11 * * *"
+    # END SCHEDULE
+  workflow_dispatch:      # "Run workflow" button for manual runs
+    inputs:
+      send_empty:
+        description: "Send the email even if nothing is new (tests Gmail setup)"
+        type: boolean
+        default: true
+
+permissions:
+  contents: write         # to commit the data/ files back
+
+concurrency:
+  group: job-digest
+  cancel-in-progress: false
+
+jobs:
+  digest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Only run at the local time in config.json
+        id: gate
+        run: python -m jobsearch.schedule gate "${{ github.event_name }}" "${{ github.event.schedule }}" >> "$GITHUB_OUTPUT"
+
+      - name: Build and send digest
+        if: steps.gate.outputs.go == 'true'
+        env:
+          GMAIL_ADDRESS: ${{ secrets.GMAIL_ADDRESS }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          DIGEST_TO: ${{ secrets.DIGEST_TO }}
+          ADZUNA_APP_ID: ${{ secrets.ADZUNA_APP_ID }}
+          ADZUNA_APP_KEY: ${{ secrets.ADZUNA_APP_KEY }}
+        run: python -m jobsearch ${{ inputs.send_empty && '--send-empty' || '' }}
+
+      - name: Save sent-jobs list, application tracker, discovered companies
+        if: steps.gate.outputs.go == 'true'
+        run: |
+          git config user.name  "job-digest-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/
+          if git diff --cached --quiet; then echo "no changes"; exit 0; fi
+          git commit -m "Update job digest data [skip ci]"
+          git push
