@@ -35,9 +35,20 @@ jobs:
         with:
           python-version: "3.13"
 
-      - name: Only run at the local time in config.json
+      - name: Only run at the local time in config.json, once Gmail is set up
         id: gate
-        run: python -m jobsearch.schedule gate "${{ github.event_name }}" "${{ github.event.schedule }}" >> "$GITHUB_OUTPUT"
+        env:
+          HAS_GMAIL: ${{ secrets.GMAIL_ADDRESS != '' && secrets.GMAIL_APP_PASSWORD != '' }}
+        run: |
+          # Scheduled runs skip quietly until the Gmail secrets are added (e.g. in the
+          # template repo itself, or a copy that isn't set up yet). Manual runs still
+          # go ahead, so a missing secret shows up as a clear error.
+          if [ "${{ github.event_name }}" = "schedule" ] && [ "$HAS_GMAIL" != "true" ]; then
+            echo "::notice::Skipping: add the GMAIL_ADDRESS and GMAIL_APP_PASSWORD secrets to turn on the daily digest."
+            echo "go=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          python -m jobsearch.schedule gate "${{ github.event_name }}" "${{ github.event.schedule }}" >> "$GITHUB_OUTPUT"
 
       - name: Build and send digest
         if: steps.gate.outputs.go == 'true'

@@ -20,6 +20,8 @@ A daily email of **new** job postings that match your locations, job titles and 
    - `GMAIL_ADDRESS`: your Gmail address
    - `GMAIL_APP_PASSWORD`: the App Password from step 2
    - (optional) `DIGEST_TO`: send the digest to a different address
+
+   Until both Gmail secrets are added, the scheduled daily run skips quietly instead of failing.
 4. **Set your preferences.** Either:
    - **On your computer:** clone your repo, run `python -m jobsearch setup`, answer the questions, then commit and push `config.json` and `.github/workflows/daily-digest.yml`. The wizard also sets the email send time.
    - **In the browser:** edit `config.json` on GitHub (pencil icon). See [Settings](#settings) below. If you change `schedule`, also change the two `cron` lines in `.github/workflows/daily-digest.yml` (see [Send time](#send-time)).
